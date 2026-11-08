@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080e1b">
+<title>HERO STRIKE: ARENA</title>
+
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#080e1b;color:white;
+ font-family:Arial,sans-serif;
+}
+button{
+ border:0;border-radius:10px;padding:12px;
+ font-weight:bold;background:#00e69a;color:#07121b;
+ cursor:pointer;
+}
+header{
+ background:#101a2d;padding:16px;
+ display:flex;justify-content:space-between;
+ align-items:center;position:sticky;top:0;
+}
+.logo{font-size:20px;font-weight:900;color:#00e69a}
+.diamond{color:#ffd166;font-weight:bold}
+main{padding:12px;max-width:1000px;margin:auto}
+.screen{display:none}
+.screen.active{display:block}
+.hero{
+ padding:25px;background:linear-gradient(130deg,#244b70,#101a2d);
+ border-radius:16px;margin-bottom:15px;
+}
+.hero h1{font-size:29px}
+.box{
+ background:#142139;border:1px solid #2c405e;
+ padding:14px;border-radius:13px;margin-bottom:12px;
+}
+.grid{
+ display:grid;grid-template-columns:repeat(2,1fr);
+ gap:10px;
+}
+.card{
+ background:#142139;padding:12px;
+ border-radius:13px;border:1px solid #30435f;
+}
+.avatar{
+ height:85px;background:#233c59;
+ border-radius:10px;display:grid;
+ place-items:center;font-size:45px;
+}
+.common{color:#b9c7d8}
+.rare{color:#54a4ff}
+.epic{color:#c58cff}
+.legendary{color:#ffd166}
+.small{font-size:12px;color:#9eacc2;line-height:1.6}
+.price{color:#ffd166;font-weight:bold}
+.nav{
+ position:fixed;bottom:0;left:0;right:0;
+ background:#101a2d;display:grid;
+ grid-template-columns:repeat(4,1fr);
+ padding:7px;gap:5px;z-index:5;
+}
+.nav button{font-size:12px;padding:12px 3px}
+.nav button.active{background:#00e69a}
+main{padding-bottom:85px}
+.case{text-align:center}
+.case .avatar{font-size:50px}
+.modal{
+ position:fixed;inset:0;background:#000c;
+ display:grid;place-items:center;z-index:10;
+ padding:20px;
+}
+.modalbox{
+ background:#172943;border:1px solid #54708f;
+ border-radius:18px;padding:22px;
+ text-align:center;width:100%;max-width:350px;
+}
+.modal.hidden{display:none}
+.loading{
+ position:fixed;inset:0;z-index:20;
+ background:radial-gradient(circle,#1d4160,#070b14);
+ display:grid;place-items:center;text-align:center;
+}
+.loading h1{color:#00e69a;font-size:32px}
+.bar{height:12px;background:#26364b;border-radius:20px;overflow:hidden}
+.bar div{height:100%;width:0;background:#00e69a}
+#arena{
+ height:55vh;min-height:320px;
+ background:linear-gradient(#355b79 48%,#344c3d 48%);
+ border:2px solid #405b78;border-radius:14px;
+ position:relative;overflow:hidden;
+}
+#arena canvas{width:100%;height:100%}
+.hud{
+ position:absolute;top:10px;left:10px;right:10px;
+ display:flex;justify-content:space-between;
+ font-weight:bold;pointer-events:none;
+}
+.controls{
+ position:absolute;bottom:12px;left:12px;right:12px;
+ display:flex;justify-content:space-between;
+ align-items:end;
+}
+.controls button{
+ width:65px;height:65px;border-radius:50%;
+ background:#142b42;color:white;border:1px solid #8ca9c5;
+}
+#joy{
+ width:100px;height:100px;border-radius:50%;
+ border:2px solid #8ca9c5;background:#142b4288;
+ display:grid;place-items:center;touch-action:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="loading" id="loading">
+ <div>
+  <h1>HERO STRIKE</h1>
+  <h3>ARENA</h3>
+  <div class="bar"><div id="loadbar"></div></div>
+  <p id="loadtext">LOADING 0%</p>
+ </div>
+</div>
+
+<header>
+ <div class="logo">⚡ HERO STRIKE</div>
+ <div class="diamond">💎 <span id="diamonds">600</span></div>
+</header>
+
+<main>
+
+<section id="home" class="screen active">
+ <div class="hero">
+  <h1>ENTER THE ARENA</h1>
+  <p>Build your squad. Master your abilities.</p>
+  <button onclick="startMatch()">▶ PLAY</button>
+ </div>
+
+ <div class="box">
+  <h3>🏆 <span id="trophies">0</span> Trophies</h3>
+  <p class="small">Arena 1 - Rookie Grounds</p>
+ </div>
+
+ <div class="box">
+  <h3>💎 Welcome Bonus</h3>
+  <p>600 Starting Diamonds</p>
+  <p class="small">Open cases to unlock new heroes.</p>
+ </div>
+</section>
+
+<section id="deck" class="screen">
+ <h2>MY DECK</h2>
+ <p class="small">Select your unlocked hero.</p>
+ <div class="grid" id="heroGrid"></div>
+</section>
+
+<section id="shop" class="screen">
+ <h2>CASE SHOP</h2>
+ <p class="small">Open cases to unlock characters.</p>
+ <div class="grid" id="caseGrid"></div>
+</section>
+
+<section id="arenaScreen" class="screen">
+ <h2>ARENA ROAD</h2>
+ <div class="box">
+  <h3>🏆 Arena 1</h3>
+  <p>0 - 299 Trophies</p>
+  <p class="small">Win +30 | Loss -19</p>
+ </div>
+ <div class="box">
+  <h3>🔒 Arena 2</h3>
+  <p>Unlock at 300 Trophies</p>
+ </div>
+ <div class="box">
+  <h3>🔒 Arena 3</h3>
+  <p>Unlock at 900 Trophies</p>
+ </div>
+</section>
+
+<section id="battle" class="screen">
+ <h2>ARENA BATTLE</h2>
+ <div id="arena">
+  <canvas id="gameCanvas"></canvas>
+  <div class="hud">
+   <span>YOU: <b id="myScore">0</b></span>
+   <span id="timer">04:00</span>
+   <span>BOTS: <b id="botScore">0</b></span>
+  </div>
+  <div class="controls">
+   <div id="joy">MOVE</div>
+   <div>
+    <button onclick="fire()">FIRE</button>
+    <button onclick="ability()">⚡</button>
+   </div>
+  </div>
+ </div>
+ <p id="battleStatus" class="small">Defeat the bots!</p>
+ <button onclick="leaveMatch()">EXIT</button>
+</section>
+
+</main>
+
+<div class="nav">
+ <button onclick="show('home',this)" class="active">HOME</button>
+ <button onclick="show('deck',this)">DECK</button>
+ <button onclick="show('shop',this)">SHOP</button>
+ <button onclick="show('arenaScreen',this)">ARENA</button>
+</div>
+
+<div class="modal hidden" id="modal">
+ <div class="modalbox">
+  <h2 id="resultTitle">NEW HERO!</h2>
+  <div id="resultEmoji" style="font-size:75px">🦸</div>
+  <h2 id="resultName">Hero</h2>
+  <p id="resultRarity"></p>
+  <p id="resultDescription" class="small"></p>
+  <button onclick="closeModal()">CONTINUE</button>
+ </div>
+</div>
+
+<script>
+const heroes=[
+ {id:"rookie",name:"Rookie",emoji:"🛡️",rarity:"Common",hp:100,damage:12,ability:"Quick Guard",cooldown:8},
+ {id:"scout",name:"Volt Scout",emoji:"⚡",rarity:"Common",hp:105,damage:13,ability:"Dash",cooldown:7},
+ {id:"medic",name:"Pulse Medic",emoji:"🧑‍⚕️",rarity:"Rare",hp:130,damage:18,ability:"Pulse Heal",cooldown:12},
+ {id:"frost",name:"Frostbyte",emoji:"❄️",rarity:"Rare",hp:125,damage:20,ability:"Freeze Field",cooldown:13},
+ {id:"molly",name:"Molly",emoji:"🔥",rarity:"Epic",hp:155,damage:30,ability:"Blast Wave",cooldown:14},
+ {id:"gagu",name:"Gagu",emoji:"🐺",rarity:"Epic",hp:160,damage:28,ability:"Shadow Rush",cooldown:15},
+ {id:"jagger",name:"Jagger",emoji:"🪖",rarity:"Legendary",hp:220,damage:100,ability:"Titan Strike",cooldown:15},
+ {id:"nova",name:"Nova Queen",emoji:"🌟",rarity:"Legendary",hp:210,damage:95,ability:"Starfall",cooldown:15},
+ {id:"titan",name:"Titan",emoji:"🤖",rarity:"Legendary",hp:250,damage:90,ability:"Overdrive",cooldown:15}
+];
+
+const cases=[
+ {name:"Common Case",rarity:"Common",price:50,emoji:"📦",chance:"Common cards only"},
+ {name:"Rare Case",rarity:"Rare",price:100,emoji:"🧰",chance:"Rare cards only"},
+ {name:"Epic Case",rarity:"Epic",price:500,emoji:"🎁",chance:"96% Epic • 4% Legendary"},
+ {name:"Legendary Case",rarity:"Legendary",price:3000,emoji:"👑",chance:"Guaranteed Legendary"}
+];
+
+let saveData;
+try{saveData=JSON.parse(localStorage.getItem("heroStrikeSave"))}catch(e){}
+let state=saveData||{
+ diamonds:600,
+ trophies:0,
+ unlocked:["rookie"],
+ selected:"rookie"
+};
+
+function save(){
+ localStorage.setItem("heroStrikeSave",JSON.stringify(state));
+ updateUI();
+}
+
+function show(id,btn){
+ document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+ document.getElementById(id).classList.add("active");
+ document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+ if(btn)btn.classList.add("active");
+}
+
+function updateUI(){
+ document.getElementById("diamonds").textContent=state.diamonds;
+ document.getElementById("trophies").textContent=state.trophies;
+ renderHeroes();
+ renderCases();
+}
+
+function renderHeroes(){
+ const grid=document.getElementById("heroGrid");
+ grid.innerHTML="";
+ state.unlocked.forEach(id=>{
+  const h=heroes.find(x=>x.id===id);
+  if(!h)return;
+  const div=document.createElement("div");
+  div.className="card";
+  div.innerHTML=`
+   <div class="avatar">${h.emoji}</div>
+   <h3>${h.name}</h3>
+   <b class="${h.rarity.toLowerCase()}">${h.rarity}</b>
+   <p class="small">HP: ${h.hp}<br>Damage: ${h.damage}<br>
+   Ability: ${h.ability}<br>Cooldown: ${h.cooldown}s</p>
+   <button ${state.selected===id?"disabled":""}
+   onclick="selectHero('${id}')">
+   ${state.selected===id?"SELECTED":"SELECT"}
+   </button>`;
+  grid.appendChild(div);
+ });
+}
+
+function renderCases(){
+ const grid=document.getElementById("caseGrid");
+ grid.innerHTML="";
+ cases.forEach(c=>{
+  const div=document.createElement("div");
+  div.className="card case";
+  div.innerHTML=`
+   <div class="avatar">${c.emoji}</div>
+   <h3>${c.name}</h3>
+   <b class="${c.rarity.toLowerCase()}">${c.rarity}</b>
+   <p class="small">${c.chance}</p>
+   <p class="price">💎 ${c.price}</p>
+   <button ${state.diamonds<c.price?"disabled":""}
+   onclick="buyCase('${c.rarity}')">BUY & OPEN</button>`;
+  grid.appendChild(div);
+ });
+}
+
+function selectHero(id){
+ state.selected=id;
+ save();
+}
+
+function buyCase(type){
+ const c=cases.find(x=>x.rarity===type);
+ if(state.diamonds<c.price){
+  alert("Not enough diamonds!");
+  return;
+ }
+ state.diamonds-=c.price;
+
+ let pool;
+ if(type==="Common")pool=heroes.filter(h=>h.rarity==="Common");
+ else if(type==="Rare")pool=heroes.filter(h=>h.rarity==="Rare");
+ else if(type==="Epic"){
+  pool=Math.random()<0.04?
+   heroes.filter(h=>h.rarity==="Legendary"):
+   heroes.filter(h=>h.rarity==="Epic");
+ }else{
+  pool=heroes.filter(h=>h.rarity==="Legendary");
+ }
+
+ const h=pool[Math.floor(Math.random()*pool.length)];
+ const duplicate=state.unlocked.includes(h.id);
+
+ if(!duplicate)state.unlocked.push(h.id);
+
+ save();
+
+ document.getElementById("resultTitle").textContent=
+  duplicate?"DUPLICATE CARD":"NEW HERO UNLOCKED!";
+ document.getElementById("resultEmoji").textContent=h.emoji;
+ document.getElementById("resultName").textContent=h.name;
+ document.getElementById("resultRarity").textContent=h.rarity;
+ document.getElementById("resultDescription").textContent=
+  h.ability+" • "+h.cooldown+" seconds cooldown";
+
+ document.getElementById("modal").classList.remove("hidden");
+}
+
+function closeModal(){
+ document.getElementById("modal").classList.add("hidden");
+}
+
+/* BATTLE */
+let canvas,ctx,player,bots,score,botScore,timeLeft,timerId,gameOn=false,lastAbility=0;
+
+function startMatch(){
+ show("battle");
+ canvas=document.getElementById("gameCanvas");
+ ctx=canvas.getContext("2d");
+ canvas.width=canvas.clientWidth;
+ canvas.height=canvas.clientHeight;
+
+ player={x:canvas.width/2,y:canvas.height*.75,hp:100};
+ score=0;
+ botScore=0;
+ timeLeft=240;
+
+ bots=Array.from({length:4},(_,i)=>({
+  x:canvas.width*(.2+i*.2),
+  y:canvas.height*.3,
+  hp:60,
+  alive:true,
+  dir:Math.random()*6.28
+ }));
+
+ gameOn=true;
+ lastAbility=0;
+ clearInterval(timerId);
+ timerId=setInterval(tick,1000);
+ draw();
+}
+
+function draw(){
+ if(!gameOn)return;
+ const w=canvas.width,h=canvas.height;
+ ctx.clearRect(0,0,w,h);
+
+ ctx.fillStyle="#355b79";
+ ctx.fillRect(0,0,w,h*.48);
+ ctx.fillStyle="#344c3d";
+ ctx.fillRect(0,h*.48,w,h*.52);
+
+ ctx.fillStyle="#00e69a";
+ ctx.beginPath();
+ ctx.arc(player.x,player.y,15,0,Math.PI*2);
+ ctx.fill();
+
+ bots.forEach(b=>{
+  if(!b.alive)return;
+  ctx.fillStyle="#ff6464";
+  ctx.beginPath();
+  ctx.arc(b.x,b.y,14,0,Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle="#222";
+  ctx.fillRect(b.x-15,b.y-23,30,4);
+  ctx.fillStyle="#ffcc66";
+  ctx.fillRect(b.x-15,b.y-23,30*(b.hp/60),4);
+ });
+}
+
+function tick(){
+ if(!gameOn)return;
+ timeLeft--;
+ document.getElementById("timer").textContent=
+  String(Math.floor(timeLeft/60)).padStart(2,"0")+":"+
+  String(timeLeft%60).padStart(2,"0");
+
+ bots.forEach(b=>{
+  if(!b.alive)return;
+  b.dir+=(Math.random()-.5)*.7;
+  b.x+=Math.cos(b.dir)*5;
+  b.y+=Math.sin(b.dir)*3;
+  b.x=Math.max(20,Math.min(canvas.width-20,b.x));
+  b.y=Math.max(20,Math.min(canvas.height*.55,b.y));
+  if(Math.random()<.18){
+   player.hp=Math.max(0,player.hp-2);
+   botScore++;
+  }
+ });
+
+ document.getElementById("myScore").textContent=score;
+ document.getElementById("botScore").textContent=botScore;
+
+ if(player.hp<=0||timeLeft<=0){
+  finishMatch();
+  return;
+ }
+ draw();
+}
+
+function fire(){
+ if(!gameOn)return;
+ const target=bots.filter(b=>b.alive)
+  .sort((a,b)=>Math.hypot(a.x-player.x,a.y-player.y)-
+              Math.hypot(b.x-player.x,b.y-player.y))[0];
+
+ if(!target)return;
+ const h=heroes.find(x=>x.id===state.selected)||heroes[0];
+ target.hp-=h.damage;
+ score++;
+
+ if(target.hp<=0){
+  target.alive=false;
+  score+=10;
+  setTimeout(()=>{
+   if(gameOn){
+    target.x=30+Math.random()*(canvas.width-60);
+    target.y=30+Math.random()*canvas.height*.4;
+    target.hp=60;
+    target.alive=true;
+   }
+  },1800);
+ }
+ draw();
+}
+
+function ability(){
+ if(!gameOn)return;
+ const h=heroes.find(x=>x.id===state.selected)||heroes[0];
+ const now=Date.now();
+
+ if(now-lastAbility<h.cooldown*1000){
+  document.getElementById("battleStatus").textContent="Ability cooling down!";
+  return;
+ }
+
+ lastAbility=now;
+
+ if(h.id==="medic"){
+  player.hp=Math.min(h.hp,player.hp+35);
+ }else if(h.id==="rookie"){
+  player.hp=Math.min(h.hp,player.hp+20);
+ }else{
+  bots.forEach(b=>{
+   if(!b.alive)return;
+   b.hp-=h.id==="jagger"?100:h.damage*2;
+   if(b.hp<=0){
+    b.alive=false;
+    score+=10;
+   }
+  });
+ }
+
+ document.getElementById("battleStatus").textContent=
+  h.ability+" activated!";
+ draw();
+}
+
+function finishMatch(){
+ gameOn=false;
+ clearInterval(timerId);
+ const win=score>=botScore;
+
+ if(win)state.trophies+=30;
+ else state.trophies=Math.max(0,state.trophies-19);
+
+ save();
+ alert(win?"VICTORY! +30 Trophies":"DEFEAT! -19 Trophies");
+ show("home");
+}
+
+function leaveMatch(){
+ if(confirm("Leave this match?")){
+  gameOn=false;
+  clearInterval(timerId);
+  show("home");
+ }
+}
+
+/* JOYSTICK */
+const joy=document.getElementById("joy");
+let dragging=false;
+
+joy.addEventListener("pointerdown",e=>{
+ dragging=true;
+ joy.setPointerCapture(e.pointerId);
+});
+
+joy.addEventListener("pointermove",e=>{
+ if(!dragging||!gameOn)return;
+ const r=joy.getBoundingClientRect();
+ const dx=e.clientX-(r.left+r.width/2);
+ const dy=e.clientY-(r.top+r.height/2);
+
+ player.x=Math.max(15,Math.min(canvas.width-15,player.x+dx*.12));
+ player.y=Math.max(15,Math.min(canvas.height-15,player.y+dy*.12));
+ draw();
+});
+
+joy.addEventListener("pointerup",()=>dragging=false);
+joy.addEventListener("pointercancel",()=>dragging=false);
+
+/* LOADING */
+let progress=0;
+const loader=setInterval(()=>{
+ progress+=4;
+ document.getElementById("loadbar").style.width=progress+"%";
+ document.getElementById("loadtext").textContent="LOADING "+progress+"%";
+
+ if(progress>=100){
+  clearInterval(loader);
+  setTimeout(()=>{
+   document.getElementById("loading").style.display="none";
+  },400);
+ }
+},45);
+
+updateUI();
+</script>
+</body>
+</html>
